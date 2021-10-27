@@ -1,213 +1,58 @@
-
-
-// Basic demo for accelerometer readings from Adafruit MPU6050
-
-/*Libraries needed for MPU6050*/
-#include <Adafruit_MPU6050.h>
-#include <Adafruit_Sensor.h>
-#include <Wire.h>
-/*Libraries needed for BLE Mouse setting*/
 #include <BleConnectionStatus.h>
 #include <BleMouse.h>
-/*
-----------------------------------
--------------Type Definitions-----
-----------------------------------
-*/
 
-/*Type definition for a structure regarding the coded-in deadzones for the accelerometer.*/
-typedef struct MPUAccelDeadZones
-{
-  /*Define midpoints of accelleration deadzones*/
-  float x_dead_center;
-  float y_dead_center;
-  float z_dead_center;
-  /*Define absolute value threshold, that accelleration must cross in order to output non-zero values*/
-  int x_dead_threshold = 1;
-  int y_dead_threshold = 1;
-  int z_dead_threshold = 1;
-};
+#include "Wire.h"
+#include <MPU6050_light.h>
 
-/*
-----------------------------------
------Function Prototypes-----
-----------------------------------
-*/
+MPU6050 mpu(Wire);
 
-/*
-  Function Name: getDeadZones
-  Input: 
-    MPUAccelDeadZones type (deadzones)
-    Adafruit_MPU6050 type (mpu)
-  Purpose: Gathers acceleration data and determines the midpoint of each deadzone
-*/
-void getDeadZones(MPUAccelDeadZones *deadZone, Adafruit_MPU6050 mpu);
+BleMouse testMouse;
 
-void calculateDeadZonedAccel(MPUAccelDeadZones *deadZone, sensors_event_t *accel);
+int mouseX,mouseY;
+long timer = 0;
 
-/*
-----------------------------------
--------------Main Code------------
-----------------------------------
-*/
-Adafruit_MPU6050 mpu;
-
-MPUAccelDeadZones deadZone;
-
-BleMouse TestMouse;
-
-void setup(void) 
-{
-  Serial.begin(115200);
+void setup() {
+  Serial.begin(9600);
+  /*Init MPU6050*/
+  Wire.begin();
   
-  while (!Serial)
-    delay(10); // will pause Zero, Leonardo, etc until serial console opens
+  byte status = mpu.begin();
+  Serial.print(F("MPU6050 status: "));
+  Serial.println(status);
+  while(status!=0){ } // stop everything if could not connect to MPU6050
+  
+  Serial.println(F("Calculating offsets, do not move MPU6050"));
+  delay(1000);
+  mpu.calcOffsets(true,true); // gyro and accelero
+  Serial.println("Done!\n");
 
-  Serial.println("Adafruit MPU6050 test!");
-
-//   Try to initialize!
-  if (!mpu.begin()) {
-    Serial.println("Failed to find MPU6050 chip");
-    while (1) {
-      delay(10);
-    }
-  }
-//  Serial.println("MPU6050 Found!");
-//
-//  mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
-//  Serial.print("Accelerometer range set to: ");
-//  switch (mpu.getAccelerometerRange()) {
-//  case MPU6050_RANGE_2_G:
-//    Serial.println("+-2G");
-//    break;
-//  case MPU6050_RANGE_4_G:
-//    Serial.println("+-4G");
-//    break;
-//  case MPU6050_RANGE_8_G:
-//    Serial.println("+-8G");
-//    break;
-//  case MPU6050_RANGE_16_G:
-//    Serial.println("+-16G");
-//    break;
-//  }
-//  mpu.setGyroRange(MPU6050_RANGE_500_DEG);
-//  Serial.print("Gyro range set to: ");
-//  switch (mpu.getGyroRange()) {
-//  case MPU6050_RANGE_250_DEG:
-//    Serial.println("+- 250 deg/s");
-//    break;
-//  case MPU6050_RANGE_500_DEG:
-//    Serial.println("+- 500 deg/s");
-//    break;
-//  case MPU6050_RANGE_1000_DEG:
-//    Serial.println("+- 1000 deg/s");
-//    break;
-//  case MPU6050_RANGE_2000_DEG:
-//    Serial.println("+- 2000 deg/s");
-//    break;
-//  }
-//
-//  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
-//  Serial.print("Filter bandwidth set to: ");
-//  switch (mpu.getFilterBandwidth()) {
-//  case MPU6050_BAND_260_HZ:
-//    Serial.println("260 Hz");
-//    break;
-//  case MPU6050_BAND_184_HZ:
-//    Serial.println("184 Hz");
-//    break;
-//  case MPU6050_BAND_94_HZ:
-//    Serial.println("94 Hz");
-//    break;
-//  case MPU6050_BAND_44_HZ:
-//    Serial.println("44 Hz");
-//    break;
-//  case MPU6050_BAND_21_HZ:
-//    Serial.println("21 Hz");
-//    break;
-//  case MPU6050_BAND_10_HZ:
-//    Serial.println("10 Hz");
-//    break;
-//  case MPU6050_BAND_5_HZ:
-//    Serial.println("5 Hz");
-//    break;
-//  }
-//
-//  Serial.println("");
-//  delay(100);
-//  getDeadZones(&deadZone,mpu);
-
-  TestMouse.begin();
+  /*Init BLE Mouse*/
+  testMouse.begin();
+  Serial.println("TestMouse Init");
 }
 
-void loop() 
-{
-  if(TestMouse.isConnected())
+void loop() {
+  mpu.update();
+
+  /*If the bluetooth module is connected, move the mouse with the corresponding accel data*/
+  if(millis() - timer > 100 && testMouse.isConnected())
   {
-
-    /* Get new sensor events with the readings */
-  //  sensors_event_t a, g, temp;
-  //  mpu.getEvent(&a, &g, &temp);
-  //
-  //  calculateDeadZonedAccel(&deadZone, &a);
-  //  /* Print out the values */
-  //  Serial.print("Acceleration X: ");
-  //  Serial.print(a.acceleration.x );
-  //  Serial.print(", Y: ");
-  //  Serial.print(a.acceleration.y );
-  //  Serial.print(", Z: ");
-  //  Serial.print(a.acceleration.z );
-  //  Serial.println(" m/s^2");
-  
-  //  Serial.print("Rotation X: ");
-  //  Serial.print(g.gyro.x);
-  //  Serial.print(", Y: ");
-  //  Serial.print(g.gyro.y);
-  //  Serial.print(", Z: ");
-  //  Serial.print(g.gyro.z);
-  //  Serial.println(" rad/s");
-  //
-  //  Serial.print("Temperature: ");
-  //  Serial.print(temp.temperature);
-  //  Serial.println(" degC");
-  
-    Serial.println("Accel Data Collected");
-  //  delay(500);
-
-
-    TestMouse.move(1,0,0);
-    Serial.println("Moving");
+    /*Get Acceleration in units of Gs and turn them into values that can be easily observed when moving the mouse.*/
+    mouseX = mpu.getAccX()*10;
+    mouseY = mpu.getAccY()*-10;
+    Serial.print(F("Mouse Movement  X: "));
+    Serial.print(mouseX);
+    Serial.print("\t");Serial.print("Y:");
+    Serial.println(mouseY);
+    testMouse.move(mouseX,mouseY,0);
+    timer = millis();
   }
-}
-
-/*
-----------------------------------
----Function Initializations-------
-----------------------------------
-*/
-void getDeadZones(MPUAccelDeadZones *deadZone, Adafruit_MPU6050 mpu)
-{
-  /*Get Sensor Data*/
-  sensors_event_t a, g, temp;
-  mpu.getEvent(&a, &g, &temp);
-  /*Get center of dead zones*/
-  deadZone->x_dead_center = a.acceleration.x;
-  deadZone->y_dead_center = a.acceleration.y;
-  deadZone->z_dead_center = a.acceleration.z;
-}
-
-void calculateDeadZonedAccel(MPUAccelDeadZones *deadZone, sensors_event_t *accel)
-{
-  if((accel->acceleration.x <= deadZone->x_dead_threshold) && (accel->acceleration.x >= -(deadZone->x_dead_threshold)))
+  /*If the bluetooth module isnt connected, let the user know*/
+  else if(millis() - timer > 100)
   {
-    accel->acceleration.x = 0;
+    Serial.println("Not Connected to Bluetooth");
+    timer = millis();
   }
-  if((accel->acceleration.y <= deadZone->y_dead_threshold) && (accel->acceleration.y >= -(deadZone->y_dead_threshold)))
-  {
-    accel->acceleration.y = 0;
-  }
-  if((accel->acceleration.z <= deadZone->z_dead_threshold) && (accel->acceleration.z >= -(deadZone->z_dead_threshold)))
-  {
-    accel->acceleration.z = 0;
-  }
+    
+
 }
