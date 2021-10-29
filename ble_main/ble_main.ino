@@ -1,58 +1,97 @@
+//#include <BleCombo.h>
+#include <BleComboKeyboard.h>
+#include <BleComboMouse.h>
 #include <BleConnectionStatus.h>
-#include <BleMouse.h>
+#include <KeyboardOutputCallbacks.h>
 
-#include "Wire.h"
-#include <MPU6050_light.h>
-
-MPU6050 mpu(Wire);
-
-BleMouse testMouse;
-
-int mouseX,mouseY;
-long timer = 0;
-
+/**
+ * This example turns the ESP32 into a Bluetooth LE keyboard and mouse that writes 
+ * some words, presses Enter, presses a media key and then Ctrl+Alt+Delete,
+ * then moves and the scrolls the mouse and clicks it.
+ */
+BleComboKeyboard Keyboard;
+BleComboMouse Mouse(&Keyboard);
 void setup() {
-  Serial.begin(9600);
-  /*Init MPU6050*/
-  Wire.begin();
-  
-  byte status = mpu.begin();
-  Serial.print(F("MPU6050 status: "));
-  Serial.println(status);
-  while(status!=0){ } // stop everything if could not connect to MPU6050
-  
-  Serial.println(F("Calculating offsets, do not move MPU6050"));
-  delay(1000);
-  mpu.calcOffsets(true,true); // gyro and accelero
-  Serial.println("Done!\n");
-
-  /*Init BLE Mouse*/
-  testMouse.begin();
-  Serial.println("TestMouse Init");
+  Serial.begin(115200);
+  Serial.println("Starting work!");
+  Keyboard.begin();
+  Mouse.begin();
 }
 
 void loop() {
-  mpu.update();
+  if(Keyboard.isConnected()) {
+    Serial.println("Sending 'Hello world'");
+    Keyboard.println("Hello World");
 
-  /*If the bluetooth module is connected, move the mouse with the corresponding accel data*/
-  if(millis() - timer > 100 && testMouse.isConnected())
-  {
-    /*Get Acceleration in units of Gs and turn them into values that can be easily observed when moving the mouse.*/
-    mouseX = mpu.getAccX()*10;
-    mouseY = mpu.getAccY()*-10;
-    Serial.print(F("Mouse Movement  X: "));
-    Serial.print(mouseX);
-    Serial.print("\t");Serial.print("Y:");
-    Serial.println(mouseY);
-    testMouse.move(mouseX,mouseY,0);
-    timer = millis();
-  }
-  /*If the bluetooth module isnt connected, let the user know*/
-  else if(millis() - timer > 100)
-  {
-    Serial.println("Not Connected to Bluetooth");
-    timer = millis();
-  }
+    delay(1000);
+    Serial.println("Sending Enter key...");
+    Keyboard.write(KEY_RETURN);
+
+    delay(1000);
+
+    unsigned long startTime;
+
+    Serial.println("Move mouse pointer up");
+    startTime = millis();
+    while(millis()<startTime+1000) {
+      Mouse.move(0,-1);
+      delay(5);
+    }
+    Serial.println("Move mouse pointer left");
+    startTime = millis();
+    while(millis()<startTime+1000) {
+      Mouse.move(-1,0);
+      delay(5);
+    }
+
+    Serial.println("Move mouse pointer down");
+    startTime = millis();
+    while(millis()<startTime+1000) {
+      Mouse.move(0,1);
+      delay(5);
+    }
+
+    Serial.println("Move mouse pointer right");
+    startTime = millis();
+    while(millis()<startTime+1000) {
+      Mouse.move(1,0);
+      delay(5);
+    }
     
+    Serial.println("Scroll Down");
+    Mouse.move(0,0,-1);
 
+    Serial.println("Left click");
+    Mouse.click(MOUSE_LEFT);
+    delay(500);
+
+    Serial.println("Right click");
+    Mouse.click(MOUSE_RIGHT);
+    delay(500);
+
+    Serial.println("Scroll wheel click");
+    Mouse.click(MOUSE_MIDDLE);
+    delay(500);
+
+    Serial.println("Back button click");
+    Mouse.click(MOUSE_BACK);
+    delay(500);
+
+    Serial.println("Forward button click");
+    Mouse.click(MOUSE_FORWARD);
+    delay(500);
+
+    Serial.println("Click left+right mouse button at the same time");
+    Mouse.click(MOUSE_LEFT | MOUSE_RIGHT);
+    delay(500);
+
+    Serial.println("Click left+right mouse button and scroll wheel at the same time");
+    Mouse.click(MOUSE_LEFT | MOUSE_RIGHT | MOUSE_MIDDLE);
+    delay(500);
+
+
+  }
+  
+  Serial.println("Waiting 2 seconds...");
+  delay(2000);
 }
