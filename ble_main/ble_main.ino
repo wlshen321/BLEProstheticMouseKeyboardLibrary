@@ -12,6 +12,14 @@ BleComboKeyboard Keyboard;
 BleComboMouse Mouse(&Keyboard);
 // Class instantiation for MPU6050
 MPU6050 mpu(Wire);
+// Globals for LED and button pins
+const int buttonPin = 5;   
+const int ledGreenPin =  2;  
+const int ledBluePin = 4;
+// Globals that will control button interrupts and corresponding for-loop functionality
+byte buttonState = LOW;
+volatile byte trigger = LOW;      
+
 void setup() 
 {
   // Set up serial initialization
@@ -28,35 +36,60 @@ void setup()
   while(status!=0){ } // stop everything if could not connect to MPU6050
   Serial.println(F("Calculating offsets, do not move MPU6050"));
   delay(1000);
-//  mpu.calcOffsets(true,true); // gyro and accelero
+  mpu.calcOffsets(true,true); // gyro and accel cal
+  // initialize the LED pins as an output:
+  pinMode(ledGreenPin, OUTPUT);
+  pinMode(ledBluePin, OUTPUT);
+  // initialize the pushbutton pin as an interrupt input:
+  pinMode(buttonPin, INPUT);
+  attachInterrupt(digitalPinToInterrupt(buttonPin), buttonISR, HIGH);
+  
   Serial.println("Done!\n");
 }
 
 void loop() 
 {
-  // Ensure that Keyboard/Mouse Combination is connected before performing BLE commands
+  if(trigger)
+  {
+    delay(100);
+    buttonState = !buttonState;
+    trigger = LOW;
+  }
   if(Keyboard.isConnected()) 
   {
-    // BLE Keyboard Testing onto Serial Monitor and BLE Keyboard
-    Serial.println("Sending 'Hello world'");
-    Keyboard.println("Hello World");
-    delay(100);
-    Serial.println("Sending Enter key...");
-    Keyboard.write(KEY_RETURN);
-    delay(100);
-    // MPU6050/BLE Mouse Test Code onto Serial Monitor and BLE Mouse
-    mpu.update();
-    Serial.print("X : ");
-    Serial.print(mpu.getAccX());
-    Serial.print("\tY : ");
-    Serial.print(mpu.getAccY());
-    Mouse.move((mpu.getAccX()*10),(mpu.getAccY()*10),0);
-    delay(100);
+    if (buttonState == HIGH) 
+    {
+      digitalWrite(ledGreenPin, HIGH);
+      digitalWrite(ledBluePin, LOW);
+      // BLE Keyboard Testing onto Serial Monitor and BLE Keyboard
+      Serial.println("Sending 'Hello world'");
+      Keyboard.println("Hello World");
+      Serial.println("Sending Enter key...");
+      Keyboard.write(KEY_RETURN);
+      delay(1000);
+    } 
+    else 
+    {
+      digitalWrite(ledGreenPin, LOW);
+      digitalWrite(ledBluePin, HIGH);
+      //Move Mouse
+      mpu.update();
+      Serial.print("X : ");
+      Serial.print(mpu.getAccX());
+      Serial.print("\tY : ");
+      Serial.println(mpu.getAccY());
+      Mouse.move((mpu.getAccX()*-10),(mpu.getAccY()*10),0);
+      delay(100);
+    }
   }
-  // Notifies user if the Keyboard/Mouse combination is not connected, without sending BLE commands
   else
   {
     Serial.println("BLE Keyboard/Mouse not connected. Waiting 2 seconds...");
     delay(2000);
   }
+}
+// Button Interrupt
+void buttonISR()
+{
+  trigger = HIGH;
 }
