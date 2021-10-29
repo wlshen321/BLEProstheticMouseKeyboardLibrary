@@ -1,97 +1,62 @@
-//#include <BleCombo.h>
+//Libraries that combine BLE Keyboard and Mouse control
+//#include <BleCombo.h> // This is commented out, because I want to create the class instantiations within the .ino file, rather than using the class instantiations within BleCombo.h
 #include <BleComboKeyboard.h>
 #include <BleComboMouse.h>
 #include <BleConnectionStatus.h>
 #include <KeyboardOutputCallbacks.h>
-
-/**
- * This example turns the ESP32 into a Bluetooth LE keyboard and mouse that writes 
- * some words, presses Enter, presses a media key and then Ctrl+Alt+Delete,
- * then moves and the scrolls the mouse and clicks it.
- */
+//Libraries that control the MSP6050
+#include "Wire.h"
+#include <MPU6050_light.h>
+// Class instantiations for BLE Mouse/Keyboard control
 BleComboKeyboard Keyboard;
 BleComboMouse Mouse(&Keyboard);
-void setup() {
+// Class instantiation for MPU6050
+MPU6050 mpu(Wire);
+void setup() 
+{
+  // Set up serial initialization
   Serial.begin(115200);
-  Serial.println("Starting work!");
+  Serial.println("Starting work!"); // Debug Code
+  // Initialize Keyboard and Mouse Emulations
   Keyboard.begin();
   Mouse.begin();
+  // Initialize and calibrate MPU6050
+  Wire.begin();
+  byte status = mpu.begin();
+  Serial.print(F("MPU6050 status: "));
+  Serial.println(status);
+  while(status!=0){ } // stop everything if could not connect to MPU6050
+  Serial.println(F("Calculating offsets, do not move MPU6050"));
+  delay(1000);
+//  mpu.calcOffsets(true,true); // gyro and accelero
+  Serial.println("Done!\n");
 }
 
-void loop() {
-  if(Keyboard.isConnected()) {
+void loop() 
+{
+  // Ensure that Keyboard/Mouse Combination is connected before performing BLE commands
+  if(Keyboard.isConnected()) 
+  {
+    // BLE Keyboard Testing onto Serial Monitor and BLE Keyboard
     Serial.println("Sending 'Hello world'");
     Keyboard.println("Hello World");
-
-    delay(1000);
+    delay(100);
     Serial.println("Sending Enter key...");
     Keyboard.write(KEY_RETURN);
-
-    delay(1000);
-
-    unsigned long startTime;
-
-    Serial.println("Move mouse pointer up");
-    startTime = millis();
-    while(millis()<startTime+1000) {
-      Mouse.move(0,-1);
-      delay(5);
-    }
-    Serial.println("Move mouse pointer left");
-    startTime = millis();
-    while(millis()<startTime+1000) {
-      Mouse.move(-1,0);
-      delay(5);
-    }
-
-    Serial.println("Move mouse pointer down");
-    startTime = millis();
-    while(millis()<startTime+1000) {
-      Mouse.move(0,1);
-      delay(5);
-    }
-
-    Serial.println("Move mouse pointer right");
-    startTime = millis();
-    while(millis()<startTime+1000) {
-      Mouse.move(1,0);
-      delay(5);
-    }
-    
-    Serial.println("Scroll Down");
-    Mouse.move(0,0,-1);
-
-    Serial.println("Left click");
-    Mouse.click(MOUSE_LEFT);
-    delay(500);
-
-    Serial.println("Right click");
-    Mouse.click(MOUSE_RIGHT);
-    delay(500);
-
-    Serial.println("Scroll wheel click");
-    Mouse.click(MOUSE_MIDDLE);
-    delay(500);
-
-    Serial.println("Back button click");
-    Mouse.click(MOUSE_BACK);
-    delay(500);
-
-    Serial.println("Forward button click");
-    Mouse.click(MOUSE_FORWARD);
-    delay(500);
-
-    Serial.println("Click left+right mouse button at the same time");
-    Mouse.click(MOUSE_LEFT | MOUSE_RIGHT);
-    delay(500);
-
-    Serial.println("Click left+right mouse button and scroll wheel at the same time");
-    Mouse.click(MOUSE_LEFT | MOUSE_RIGHT | MOUSE_MIDDLE);
-    delay(500);
-
-
+    delay(100);
+    // MPU6050/BLE Mouse Test Code onto Serial Monitor and BLE Mouse
+    mpu.update();
+    Serial.print("X : ");
+    Serial.print(mpu.getAccX());
+    Serial.print("\tY : ");
+    Serial.print(mpu.getAccY());
+    Mouse.move((mpu.getAccX()*10),(mpu.getAccY()*10),0);
+    delay(100);
   }
-  
-  Serial.println("Waiting 2 seconds...");
-  delay(2000);
+  // Notifies user if the Keyboard/Mouse combination is not connected, without sending BLE commands
+  else
+  {
+    Serial.println("BLE Keyboard/Mouse not connected. Waiting 2 seconds...");
+    delay(2000);
+  }
 }
