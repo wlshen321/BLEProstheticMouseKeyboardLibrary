@@ -13,12 +13,14 @@ BleComboMouse Mouse(&Keyboard);
 // Class instantiation for MPU6050
 MPU6050 mpu(Wire);
 // Globals for LED and button pins
-const int buttonPin = 5;   
+const int buttonModePin = 5;  
+const int buttonClickPin = 23; 
 const int ledGreenPin =  2;  
 const int ledBluePin = 4;
 // Globals that will control button interrupts and corresponding for-loop functionality
-byte buttonState = LOW;
-volatile byte trigger = LOW;      
+byte modeState = LOW;
+volatile byte modeTrigger = LOW;
+volatile byte clickTrigger = LOW;           
 
 void setup() 
 {
@@ -40,24 +42,26 @@ void setup()
   // initialize the LED pins as an output:
   pinMode(ledGreenPin, OUTPUT);
   pinMode(ledBluePin, OUTPUT);
-  // initialize the pushbutton pin as an interrupt input:
-  pinMode(buttonPin, INPUT);
-  attachInterrupt(digitalPinToInterrupt(buttonPin), buttonISR, HIGH);
+  // initialize the pushbutton pins as an interrupt input:
+  pinMode(buttonModePin, INPUT);
+  attachInterrupt(digitalPinToInterrupt(buttonModePin), modeISR, HIGH);
+  pinMode(buttonClickPin,INPUT);
+  attachInterrupt(digitalPinToInterrupt(buttonClickPin), clickISR, HIGH);
   
   Serial.println("Done!\n");
 }
 
 void loop() 
 {
-  if(trigger)
+  if(modeTrigger)
   {
     delay(100);
-    buttonState = !buttonState;
-    trigger = LOW;
+    modeState = !modeState;
+    modeTrigger = LOW;
   }
   if(Keyboard.isConnected()) 
   {
-    if (buttonState == HIGH) 
+    if (modeState == HIGH) 
     {
       digitalWrite(ledGreenPin, HIGH);
       digitalWrite(ledBluePin, LOW);
@@ -79,6 +83,12 @@ void loop()
       Serial.print("\tY : ");
       Serial.println(mpu.getAccY());
       Mouse.move((mpu.getAccX()*-10),(mpu.getAccY()*10),0);
+      if(clickTrigger == HIGH)
+      {
+        delay(100);
+        Mouse.click(MOUSE_LEFT);
+        clickTrigger = LOW;
+      }
       delay(100);
     }
   }
@@ -88,8 +98,12 @@ void loop()
     delay(2000);
   }
 }
-// Button Interrupt
-void buttonISR()
+// Button Interrupts
+void modeISR()
 {
-  trigger = HIGH;
+  modeTrigger = HIGH;
+}
+void clickISR()
+{
+  clickTrigger = HIGH;
 }
