@@ -30,13 +30,31 @@ volatile byte clickTrigger = LOW;
 class AccelerometerMouseKeyboard
 {
   public:
+    byte init();
     void mouseMove();
-    void mouseClick();
+    
 };
 
 /*
  * API Class Method Definitions 
  */ 
+byte AccelerometerMouseKeyboard::init()
+{
+  // Initialize Keyboard and Mouse Emulations
+  Keyboard.begin();
+  Mouse.begin();
+  // Initialize and calibrate MPU6050
+  Wire.begin();
+  byte status = mpu.begin();
+  // Calculate offsets, depending on whether or not the MPU actually initialized.
+  if(status !=0)
+    return status;
+  else
+  {
+    mpu.calcOffsets(true,true); // gyro and accel cal
+    return status;
+  }
+}
 void AccelerometerMouseKeyboard::mouseMove()
 {
   mpu.update();
@@ -54,18 +72,19 @@ void setup()
   // Set up serial initialization
   Serial.begin(115200);
   Serial.println("Starting work!"); // Debug Code
-  // Initialize Keyboard and Mouse Emulations
-  Keyboard.begin();
-  Mouse.begin();
-  // Initialize and calibrate MPU6050
-  Wire.begin();
-  byte status = mpu.begin();
-  Serial.print(F("MPU6050 status: "));
-  Serial.println(status);
-  while(status!=0){ } // stop everything if could not connect to MPU6050
-  Serial.println(F("Calculating offsets, do not move MPU6050"));
-  delay(1000);
-  mpu.calcOffsets(true,true); // gyro and accel cal
+//  // Initialize Keyboard and Mouse Emulations
+//  Keyboard.begin();
+//  Mouse.begin();
+//  // Initialize and calibrate MPU6050
+//  Wire.begin();
+//  byte status = mpu.begin();
+//  Serial.print(F("MPU6050 status: "));
+//  Serial.println(status);
+//  while(status!=0){ } // stop everything if could not connect to MPU6050
+//  Serial.println(F("Calculating offsets, do not move MPU6050"));
+//  delay(1000);
+//  mpu.calcOffsets(true,true); // gyro and accel cal
+  Test.init();
   // initialize the LED pins as an output:
   pinMode(ledGreenPin, OUTPUT);
   pinMode(ledBluePin, OUTPUT);
