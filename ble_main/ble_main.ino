@@ -7,6 +7,8 @@
 //Libraries that control the MSP6050
 #include "Wire.h"
 #include <MPU6050_light.h>
+
+
 // Class instantiations for BLE Mouse/Keyboard control
 BleComboKeyboard Keyboard;
 BleComboMouse Mouse(&Keyboard);
@@ -20,7 +22,32 @@ const int ledBluePin = 4;
 // Globals that will control button interrupts and corresponding for-loop functionality
 byte modeState = LOW;
 volatile byte modeTrigger = LOW;
-volatile byte clickTrigger = LOW;           
+volatile byte clickTrigger = LOW; 
+
+/*
+ *  API Class Definition 
+ */
+class AccelerometerMouseKeyboard
+{
+  public:
+    void mouseMove();
+    void mouseClick();
+};
+
+/*
+ * API Class Method Definitions 
+ */ 
+void AccelerometerMouseKeyboard::mouseMove()
+{
+  mpu.update();
+  Serial.print("X : ");
+  Serial.print(mpu.getAccX());
+  Serial.print("\tY : ");
+  Serial.println(mpu.getAccY());
+  Mouse.move((mpu.getAccX()*-10),(mpu.getAccY()*10),0);
+}
+
+AccelerometerMouseKeyboard Test;
 
 void setup() 
 {
@@ -74,15 +101,16 @@ void loop()
     } 
     else 
     {
-      digitalWrite(ledGreenPin, LOW);
-      digitalWrite(ledBluePin, HIGH);
-      //Move Mouse
-      mpu.update();
-      Serial.print("X : ");
-      Serial.print(mpu.getAccX());
-      Serial.print("\tY : ");
-      Serial.println(mpu.getAccY());
-      Mouse.move((mpu.getAccX()*-10),(mpu.getAccY()*10),0);
+       digitalWrite(ledGreenPin, LOW);
+       digitalWrite(ledBluePin, HIGH);
+      // //Move Mouse
+      // mpu.update();
+      // Serial.print("X : ");
+      // Serial.print(mpu.getAccX());
+      // Serial.print("\tY : ");
+      // Serial.println(mpu.getAccY());
+      // Mouse.move((mpu.getAccX()*-10),(mpu.getAccY()*10),0);
+      Test.mouseMove();
       if(clickTrigger == HIGH)
       {
         delay(100);
