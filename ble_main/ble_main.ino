@@ -72,19 +72,8 @@ void setup()
   // Set up serial initialization
   Serial.begin(115200);
   Serial.println("Starting work!"); // Debug Code
-//  // Initialize Keyboard and Mouse Emulations
-//  Keyboard.begin();
-//  Mouse.begin();
-//  // Initialize and calibrate MPU6050
-//  Wire.begin();
-//  byte status = mpu.begin();
-//  Serial.print(F("MPU6050 status: "));
-//  Serial.println(status);
-//  while(status!=0){ } // stop everything if could not connect to MPU6050
-//  Serial.println(F("Calculating offsets, do not move MPU6050"));
-//  delay(1000);
-//  mpu.calcOffsets(true,true); // gyro and accel cal
-  Test.init();
+  byte status = Test.init();
+  while(status != 0);
   // initialize the LED pins as an output:
   pinMode(ledGreenPin, OUTPUT);
   pinMode(ledBluePin, OUTPUT);
