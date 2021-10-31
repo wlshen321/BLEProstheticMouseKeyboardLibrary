@@ -9,9 +9,9 @@
 #include <MPU6050_light.h>
 
 
-// Class instantiations for BLE Mouse/Keyboard control
-BleComboKeyboard Keyboard;
-BleComboMouse Mouse(&Keyboard);
+// // Class instantiations for BLE Mouse/Keyboard control
+ BleComboKeyboard Keyboard;
+ BleComboMouse Mouse(&Keyboard);
 // Class instantiation for MPU6050
 MPU6050 mpu(Wire);
 // Globals for LED and button pins
@@ -32,6 +32,8 @@ class AccelerometerMouseKeyboard
   public:
     byte init();
     void mouseMove();
+    BleComboKeyboard comboKeyboard;
+    BleComboMouse comboMouse(&comboKeyboard); // if I put &comboKeyboard in here, it wont compile. How do I fix this?
     
 };
 
