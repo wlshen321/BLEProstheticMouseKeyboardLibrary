@@ -9,11 +9,11 @@
 #include <MPU6050_light.h>
 
 
-// // Class instantiations for BLE Mouse/Keyboard control
- BleComboKeyboard Keyboard;
- BleComboMouse Mouse(&Keyboard);
-// Class instantiation for MPU6050
-MPU6050 mpu(Wire);
+// // // Class instantiations for BLE Mouse/Keyboard control
+//  BleComboKeyboard Keyboard;
+//  BleComboMouse Mouse(&Keyboard);
+// // Class instantiation for MPU6050
+// MPU6050 mpu(Wire);
 // Globals for LED and button pins
 const int buttonModePin = 5;  
 const int buttonClickPin = 23; 
@@ -27,55 +27,69 @@ volatile byte clickTrigger = LOW;
 /*
  *  API Class Definition 
  */
-class AccelerometerMouseKeyboard
+class BLEClass
 {
   public:
+    
     byte init();
     void mouseMove();
-    BleComboKeyboard comboKeyboard;
-    BleComboMouse comboMouse(&comboKeyboard); // if I put &comboKeyboard in here, it wont compile. How do I fix this?
-    
-};
+    void hello();
+    int c_accelx;
+    int c_accely;
+    BleComboKeyboard* comboKeyboard;
+    MPU6050* comboMPU;
+    BleComboMouse* comboMouse; // if I put &comboKeyboard in here, it wont compile. How do I fix this?
+    BLEClass()
+    {
+      *comboKeyboard = new BleComboKeyboard;
+      *comboMPU = new MPU6050(Wire);
+      *comboMouse = new BleComboMouse(comboKeyboard);
+    }
 
+};
 /*
  * API Class Method Definitions 
  */ 
-byte AccelerometerMouseKeyboard::init()
+byte BLEClass::init()
 {
   // Initialize Keyboard and Mouse Emulations
-  Keyboard.begin();
-  Mouse.begin();
+  comboKeyboard->begin();
+  comboMouse->begin();
   // Initialize and calibrate MPU6050
   Wire.begin();
-  byte status = mpu.begin();
+  byte status = comboMPU->begin();
   // Calculate offsets, depending on whether or not the MPU actually initialized.
   if(status !=0)
     return status;
   else
   {
-    mpu.calcOffsets(true,true); // gyro and accel cal
+    comboMPU->calcOffsets(true,true); // gyro and accel cal
     return status;
   }
 }
-void AccelerometerMouseKeyboard::mouseMove()
+
+void BLEClass::mouseMove()
 {
-  mpu.update();
-  Serial.print("X : ");
-  Serial.print(mpu.getAccX());
-  Serial.print("\tY : ");
-  Serial.println(mpu.getAccY());
-  Mouse.move((mpu.getAccX()*-10),(mpu.getAccY()*10),0);
+  comboMPU->update();
+  comboMouse->move((comboMPU->getAccX()*-10),(comboMPU->getAccY()*10),0);
 }
 
-AccelerometerMouseKeyboard Test;
+void BLEClass::hello()
+{
+  comboKeyboard->println("Hello World");
+}
+
+BLEClass Test;
 
 void setup() 
 {
+
   // Set up serial initialization
   Serial.begin(115200);
   Serial.println("Starting work!"); // Debug Code
   byte status = Test.init();
-  while(status != 0);
+  while(status != 0)
+    Serial.println("Cant connect to MPU");
   // initialize the LED pins as an output:
   pinMode(ledGreenPin, OUTPUT);
   pinMode(ledBluePin, OUTPUT);
@@ -84,7 +98,6 @@ void setup()
   attachInterrupt(digitalPinToInterrupt(buttonModePin), modeISR, HIGH);
   pinMode(buttonClickPin,INPUT);
   attachInterrupt(digitalPinToInterrupt(buttonClickPin), clickISR, HIGH);
-  
   Serial.println("Done!\n");
 }
 
@@ -96,7 +109,7 @@ void loop()
     modeState = !modeState;
     modeTrigger = LOW;
   }
-  if(Keyboard.isConnected()) 
+  if(Test.comboKeyboard->isConnected()) 
   {
     if (modeState == HIGH) 
     {
@@ -104,27 +117,20 @@ void loop()
       digitalWrite(ledBluePin, LOW);
       // BLE Keyboard Testing onto Serial Monitor and BLE Keyboard
       Serial.println("Sending 'Hello world'");
-      Keyboard.println("Hello World");
+      Test.hello();
       Serial.println("Sending Enter key...");
-      Keyboard.write(KEY_RETURN);
+      Test.comboKeyboard->write(KEY_RETURN);
       delay(1000);
     } 
     else 
     {
        digitalWrite(ledGreenPin, LOW);
        digitalWrite(ledBluePin, HIGH);
-      // //Move Mouse
-      // mpu.update();
-      // Serial.print("X : ");
-      // Serial.print(mpu.getAccX());
-      // Serial.print("\tY : ");
-      // Serial.println(mpu.getAccY());
-      // Mouse.move((mpu.getAccX()*-10),(mpu.getAccY()*10),0);
       Test.mouseMove();
       if(clickTrigger == HIGH)
       {
         delay(100);
-        Mouse.click(MOUSE_LEFT);
+        Test.comboMouse->click(MOUSE_LEFT);
         clickTrigger = LOW;
       }
       delay(100);
