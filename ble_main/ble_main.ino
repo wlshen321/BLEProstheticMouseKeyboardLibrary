@@ -58,6 +58,7 @@ class BLEClass
 //  comboMouse = new BleComboMouse(comboKeyboard);
 //}
 
+};
 /*
  * API Class Method Definitions 
  */ 
