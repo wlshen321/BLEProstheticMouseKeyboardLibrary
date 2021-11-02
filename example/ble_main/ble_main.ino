@@ -10,7 +10,8 @@
 ----------------------------------
 */
 void modeISR();
-void clickISR();
+void clickRightISR();
+void clickLeftISR();
 
 /*
 ----------------------------------
@@ -19,13 +20,15 @@ void clickISR();
 */
 // Globals for LED and button pins
 const int buttonModePin = 5;  
-const int buttonClickPin = 23; 
+const int buttonClickRightPin = 23; 
+const int buttonClickLeftPin = 19;
 const int ledGreenPin =  2;  
 const int ledBluePin = 4;
 // Globals that will control button interrupts and corresponding for-loop functionality
 byte modeState = LOW;
 volatile byte modeTrigger = LOW;
-volatile byte clickTrigger = LOW; 
+volatile byte clickRightTrigger = LOW; 
+volatile byte clickLeftTrigger = LOW; 
 // Class instantiation
 BLEClass Test;
 /*
@@ -48,8 +51,10 @@ void setup()
   // initialize the pushbutton pins as an interrupt input:
   pinMode(buttonModePin, INPUT);
   attachInterrupt(digitalPinToInterrupt(buttonModePin), modeISR, HIGH);
-  pinMode(buttonClickPin,INPUT);
-  attachInterrupt(digitalPinToInterrupt(buttonClickPin), clickISR, HIGH);
+  pinMode(buttonClickRightPin,INPUT);
+  attachInterrupt(digitalPinToInterrupt(buttonClickRightPin), clickRightISR, HIGH);
+  pinMode(buttonClickLeftPin,INPUT);
+  attachInterrupt(digitalPinToInterrupt(buttonClickLeftPin), clickLeftISR, HIGH);
   Serial.println("Done!\n");
 }
 
@@ -57,7 +62,6 @@ void loop()
 {
   if(modeTrigger)
   {
-    delay(100);
     modeState = !modeState;
     modeTrigger = LOW;
   }
@@ -69,7 +73,7 @@ void loop()
       digitalWrite(ledBluePin, LOW);
       // BLE Keyboard Testing onto Serial Monitor and BLE Keyboard
       Serial.println("Sending 'Hello world'");
-      Test.hello();
+      Test.comboKeyboard.println("Hello World");
       Serial.println("Sending Enter key...");
       Test.comboKeyboard.write(KEY_RETURN);
       delay(1000);
@@ -79,11 +83,15 @@ void loop()
        digitalWrite(ledGreenPin, LOW);
        digitalWrite(ledBluePin, HIGH);
       Test.mouseMove();
-      if(clickTrigger == HIGH)
+      if(clickRightTrigger == HIGH)
       {
-        delay(100);
+        Test.comboMouse.click(MOUSE_RIGHT);
+        clickRightTrigger = LOW;
+      }
+      else if(clickLeftTrigger == HIGH)
+      {
         Test.comboMouse.click(MOUSE_LEFT);
-        clickTrigger = LOW;
+        clickLeftTrigger = LOW;
       }
       delay(100);
     }
@@ -103,7 +111,11 @@ void modeISR()
 {
   modeTrigger = HIGH;
 }
-void clickISR()
+void clickRightISR()
 {
-  clickTrigger = HIGH;
+  clickRightTrigger = HIGH;
+}
+void clickLeftISR()
+{
+  clickLeftTrigger = HIGH; 
 }
