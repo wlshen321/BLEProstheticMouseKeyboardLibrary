@@ -1,12 +1,22 @@
 /*
 ----------------------------------
------Includes-----
+-------------Includes-------------
 ----------------------------------
 */
 #include <EECS473BLECombo.h>
+
 /*
 ----------------------------------
------ISR Test Function Prototypes-----
+--------------Macros--------------
+----------------------------------
+*/
+// Printing with stream operator helper functions
+template <class T> inline Print &operator<<(Print &obj, T arg) { obj.print(arg); return obj; }
+template <> inline Print &operator<<(Print &obj, float arg) { obj.print(arg, 4); return obj; }
+
+/*
+----------------------------------
+---ISR Test Function Prototypes---
 ----------------------------------
 */
 void modeISR();
@@ -15,20 +25,30 @@ void clickLeftISR();
 
 /*
 ----------------------------------
--------------Globals------------
+-------------Structs--------------
 ----------------------------------
 */
-// Globals for LED and button pins
-const int buttonModePin = 5;  
+enum class PCInputMode{mouse, keyboard};
+
+/*
+----------------------------------
+-------------Globals--------------
+----------------------------------
+*/
+const int MOUSE_DELAY = 100; // delay between subsequent mouse position reads in ms
+const int KEYBOARD_DELAY = 1000; // delay between subsequent keys in ms; to be reduced later
+
+// GPIO pins for LED and button for ESP32-WROOM-32D
+const int ledGreenPin = 2;
+const int ledBluePin = 4;
+const int buttonModePin = 5;
 const int buttonClickRightPin = 23; 
 const int buttonClickLeftPin = 19;
-const int ledGreenPin =  2;  
-const int ledBluePin = 4;
 // Globals that will control button interrupts and corresponding for-loop functionality
-byte modeState = LOW;
-volatile byte modeTrigger = LOW;
-volatile byte clickRightTrigger = LOW; 
-volatile byte clickLeftTrigger = LOW; 
+PCInputMode inputMode = PCInputMode::mouse;
+volatile bool clickRightTrigger = false; 
+volatile bool clickLeftTrigger = false; 
+volatile bool inputModeTrigger = false;
 // Class instantiation
 BLEClass Test;
 /*
@@ -44,7 +64,10 @@ void setup()
   Serial.println("Starting work!"); // Debug Code
   byte status = Test.init();
   while(status != 0)
+  {
     Serial.println("Cant connect to MPU");
+  }
+
   // initialize the LED pins as an output:
   pinMode(ledGreenPin, OUTPUT);
   pinMode(ledBluePin, OUTPUT);
@@ -60,47 +83,54 @@ void setup()
 
 void loop() 
 {
-  if(modeTrigger)
-  {
-    modeState = !modeState;
-    modeTrigger = LOW;
+  if (inputModeTrigger) {
+    // Toggle input mode; for now, only 2 modes
+    inputMode = (inputMode == PCInputMode::keyboard) ? PCInputMode::mouse : PCInputMode::keyboard;
+    inputModeTrigger = false;
   }
-  if(Test.comboKeyboard.isConnected()) 
-  {
-    if (modeState == HIGH) 
-    {
-      digitalWrite(ledGreenPin, HIGH);
-      digitalWrite(ledBluePin, LOW);
-      // BLE Keyboard Testing onto Serial Monitor and BLE Keyboard
-      Serial.println("Sending 'Hello world'");
-      Test.comboKeyboard.println("Hello World");
-      Serial.println("Sending Enter key...");
-      Test.comboKeyboard.write(KEY_RETURN);
-      delay(1000);
-    } 
-    else 
-    {
-       digitalWrite(ledGreenPin, LOW);
-       digitalWrite(ledBluePin, HIGH);
-      Test.mouseMove();
-      if(clickRightTrigger == HIGH)
-      {
-        Test.comboMouse.click(MOUSE_RIGHT);
-        clickRightTrigger = LOW;
-      }
-      else if(clickLeftTrigger == HIGH)
-      {
-        Test.comboMouse.click(MOUSE_LEFT);
-        clickLeftTrigger = LOW;
-      }
-      delay(100);
-    }
-  }
-  else
+  
+  // Determine if keyboard/mouse combination is connected
+  if(!Test.comboKeyboard.isConnected())
   {
     Serial.println("BLE Keyboard/Mouse not connected. Waiting 2 seconds...");
     delay(2000);
+    return;
   }
+
+  if (inputMode == PCInputMode::keyboard) 
+  {
+    // Light up green to indicate keyboard mode
+    digitalWrite(ledGreenPin, HIGH);
+    digitalWrite(ledBluePin, LOW);
+
+    // BLE Keyboard Testing onto Serial Monitor and BLE Keyboard
+    Serial.println("Sending 'Hello world'");
+    Test.comboKeyboard.println("Hello World");
+    Serial.println("Sending Enter key...");
+    Test.comboKeyboard.write(KEY_RETURN);
+    delay(KEYBOARD_DELAY);
+  } 
+  else if (inputMode == PCInputMode::mouse)
+  {
+    // Light up blue to indicate mouse mode
+    digitalWrite(ledGreenPin, LOW);
+    digitalWrite(ledBluePin, HIGH);
+
+    Test.mouseMove();
+    if(clickRightTrigger)
+    {
+      Test.comboMouse.click(MOUSE_RIGHT);
+      clickRightTrigger = false;
+    }
+    // NOTE: May click both at once
+    if(clickLeftTrigger)
+    {
+      Test.comboMouse.click(MOUSE_LEFT);
+      clickLeftTrigger = false;
+    }
+    delay(MOUSE_DELAY);
+  }
+  
 }
 /*
 ----------------------------------
@@ -109,13 +139,14 @@ void loop()
 */
 void modeISR()
 {
-  modeTrigger = HIGH;
+  // NOTE: Despite its simplicity, operation in main loop in order to negate bouncing
+  inputModeTrigger = true;
 }
 void clickRightISR()
 {
-  clickRightTrigger = HIGH;
+  clickRightTrigger = true;
 }
 void clickLeftISR()
 {
-  clickLeftTrigger = HIGH; 
+  clickLeftTrigger = true; 
 }
