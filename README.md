@@ -6,7 +6,7 @@ Libraries used include the MPU6050 light library by [rfetick](https://www.github
 
 This is part of a larger project, where a prosthetic arm doubles as a remote mouse/keyboard based on (intended) hand gesture. More information coming soon.
 
-# Installation Instructions
+# Libraries Used In the Creation of this Code
 MPU library: https://github.com/rfetick/MPU6050_light (ver 2.0.5)
 
 Install it by looking up "MPU6050" in the library manager. Follow the wiring instructions in this tutorial: https://randomnerdtutorials.com/esp32-mpu-6050-accelerometer-gyroscope-arduino/.
@@ -15,10 +15,15 @@ BLE library: https://github.com/ServAlex/ESP32-BLE-Combo (ver 0.2.2)
 
 Install it by following instructions in the github link
 
-# Example Demo
-nothing atm
+Using Arduino IDE and arduino.h for programming the ESP32 (https://github.com/espressif/arduino-esp32) (ver 1.0.6)
 
-# Authors
-[wlshen321](https://www.github.com/wlshen321)
+Install it by following instructions in the github link
 
-[m0rsec0de762](https://www.github.com/m0rsec0de762)
+# Installation Instructions
+As mentioned above, first follow each repo's respecive instructions for their proper installations. Then, download the files within the "src" folder. Lastly, put the files witnin the "src" folder into a .zip file and use the following link to install the library: (https://www.arduino.cc/en/guide/libraries#toc4)
+# Utilizing the Example Code/Schematic
+Regarding hardware, the only thing that is needed is an ESP32-WROOM-32 Module.
+
+In order to connect the ESP32-WROOM-32 Module to the computer, while running the example code, follow the instructions in the link: (https://support.microsoft.com/en-us/windows/pair-a-bluetooth-device-in-windows-2be7b51f-6ae9-b757-a3b9-95ee40c3e242#WindowsVersion=Windows_10)
+
+
