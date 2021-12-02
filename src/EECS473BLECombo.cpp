@@ -59,7 +59,7 @@ void BLEClass::mouseMove()
   Serial.println(comboMPU.getAccY());
 #endif
 
-  comboMouse.move((comboMPU.getAccX()*-10),(comboMPU.getAccY()*10),0);
+  comboMouse.move((comboMPU.getAccY()*15),(comboMPU.getAccZ()*-15),0);
 }
 
 void BLEClass::hello()
